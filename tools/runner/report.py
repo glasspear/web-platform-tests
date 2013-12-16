@@ -181,30 +181,29 @@ def summary(UAs, results_by_test):
         rv = "All tests passed in at least one UA"
     return rv
 
-def result_rows(UAs, results_by_test):
-    result_rows = []
-    for test, result in sorted(results_by_test.iteritems()):
-        output = h.tr(
-            h.td(
-                test_link(test),
-                rowspan=(1 + len(result["subtests"]))
-            ),
-            h.td(),
-            [status_cell(status)
-             for UA, (status, mesage) in sorted(result["harness"].items())],
-            class_="test"
-        )
-        result_rows.append(output)
-        for name, subtest_result in sorted(result["subtests"].iteritems()):
-            output = h.tr(
-                          h.td(name),
-                          [status_cell(status)
-                           for UA, (status, message) in sorted(subtest_result.items())],
-                          class_="subtest"
-                      )
-            result_rows.append(output)
+def result_rows(UAs, test, result):
+    yield h.tr(
+        h.td(
+            test_link(test),
+            rowspan=(1 + len(result["subtests"]))
+        ),
+        h.td(),
+        [status_cell(status)
+         for UA, (status, message) in sorted(result["harness"].items())],
+        class_="test"
+    )
 
-    return result_rows
+    for name, subtest_result in sorted(result["subtests"].iteritems()):
+        yield h.tr(
+            h.td(name),
+            [status_cell(status)
+             for UA, (status, message) in sorted(subtest_result.items())],
+            class_="subtest"
+        )
+
+def result_bodies(UAs, results_by_test):
+    return [h.tbody(result_rows(UAs, test, result))
+            for test, result in sorted(results_by_test.iteritems())]
 
 def generate_html(UAs, results_by_test):
     doc = h(h.html([
@@ -226,10 +225,7 @@ def generate_html(UAs, results_by_test):
                         [h.th(UA) for UA in sorted(UAs)]
                     )
                 ),
-                h.tbody(
-                    result_rows(UAs, results_by_test)
-                ),
-                cellspacing=0
+                result_bodies(UAs, results_by_test)
             )
         )
     ]
