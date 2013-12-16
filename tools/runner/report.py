@@ -6,9 +6,12 @@ from collections import defaultdict
 
 import types
 
-def html_escape(item):
+def html_escape(item, escape_quote=False):
     if isinstance(item, types.StringTypes):
-        return escape(item)
+        rv = escape(item)
+        if escape_quote:
+            rv = rv.replace('"', "&quot;")
+        return rv
     else:
         return item
 
@@ -29,12 +32,13 @@ class Node(object):
     def __unicode__(self):
         if self.attrs:
             #Need to escape
-            attrs_unicode = " " + "".join("%s=\"%s\"" % (html_escape(key),
-                                                         html_escape(value))
+            attrs_unicode = " " + " ".join("%s=\"%s\"" % (html_escape(key),
+                                                          html_escape(value,
+                                                                      escape_quote=True))
                                           for key,value in self.attrs.iteritems())
         else:
             attrs_unicode = ""
-        return "<%s%s>%s</%s>" % (self.name,
+        return "<%s%s>%s</%s>\n" % (self.name,
                                   attrs_unicode,
                                   "".join(unicode(html_escape(item)) for item in self.children),
                                   self.name)
@@ -147,9 +151,14 @@ def group_results(data):
 
     return UAs, results_by_test
 
-def status_cell(status):
+def status_cell(status, message=None):
     status = status if status is not None else "NONE"
-    return h.td(status, class_="status " + status)
+    kwargs = {}
+    if message:
+        kwargs["title"] = message
+    status_text = status.title()
+    return h.td(status_text, class_="status " + status,
+                **kwargs)
 
 def test_link(test_id, subtest=None):
     if isinstance(test_id, types.StringTypes):
@@ -188,7 +197,7 @@ def result_rows(UAs, test, result):
             rowspan=(1 + len(result["subtests"]))
         ),
         h.td(),
-        [status_cell(status)
+        [status_cell(status, message)
          for UA, (status, message) in sorted(result["harness"].items())],
         class_="test"
     )
@@ -196,7 +205,7 @@ def result_rows(UAs, test, result):
     for name, subtest_result in sorted(result["subtests"].iteritems()):
         yield h.tr(
             h.td(name),
-            [status_cell(status)
+            [status_cell(status, message)
              for UA, (status, message) in sorted(subtest_result.items())],
             class_="subtest"
         )
