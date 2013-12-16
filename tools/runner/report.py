@@ -67,8 +67,8 @@ class HTML(object):
             for attr_name in attrs.keys():
                 if "_" in attr_name:
                     new_name = attr_name.replace("_", "-")
-                    if attr_name.endswith("-"):
-                        new_name = attr_name[:-1]
+                    if new_name.endswith("-"):
+                        new_name = new_name[:-1]
                     attrs[new_name] = attrs.pop(attr_name)
             return Node(name, attrs, flatten(content))
 
@@ -149,7 +149,7 @@ def group_results(data):
 
 def status_cell(status):
     status = status if status is not None else "NONE"
-    return h.td(status, class_=status)
+    return h.td(status, class_="status " + status)
 
 def test_link(test_id, subtest=None):
     if isinstance(test_id, types.StringTypes):
@@ -172,7 +172,7 @@ def summary(UAs, results_by_test):
                 not_passing.append((test, subtest_name))
     if not_passing:
         rv = [
-            h.p("the following tests failed to pass in all UAs:"),
+            h.p("The following tests failed to pass in all UAs:"),
             h.ul([h.li(test_link(test, subtest))
                   for test, subtest in not_passing
               ])
@@ -187,17 +187,20 @@ def result_rows(UAs, results_by_test):
         output = h.tr(
             h.td(
                 test_link(test),
+                rowspan=(1 + len(result["subtests"]))
             ),
             h.td(),
             [status_cell(status)
-             for UA, (status, message) in sorted(result["harness"].items())]
+             for UA, (status, mesage) in sorted(result["harness"].items())],
+            class_="test"
         )
         result_rows.append(output)
         for name, subtest_result in sorted(result["subtests"].iteritems()):
-            output = h.tr(h.td(),
+            output = h.tr(
                           h.td(name),
                           [status_cell(status)
-                           for UA, (status, message) in sorted(subtest_result.items())]
+                           for UA, (status, message) in sorted(subtest_result.items())],
+                          class_="subtest"
                       )
             result_rows.append(output)
 
@@ -207,7 +210,8 @@ def generate_html(UAs, results_by_test):
     doc = h(h.html([
         h.head(
             h.meta(charset="utf8"),
-            h.title("Implementation Report")
+            h.title("Implementation Report"),
+            h.link(href="report.css", rel="stylesheet")
         ),
         h.body(
             h.h1("Implementation Report"),
@@ -224,7 +228,8 @@ def generate_html(UAs, results_by_test):
                 ),
                 h.tbody(
                     result_rows(UAs, results_by_test)
-                )
+                ),
+                cellspacing=0
             )
         )
     ]
